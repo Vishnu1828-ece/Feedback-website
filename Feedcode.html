@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Feedback System</title>
+
+<style>
+:root {
+    --bg: linear-gradient(135deg,#667eea,#764ba2);
+    --card: rgba(255,255,255,0.15);
+    --text: #fff;
+}
+
+body.light {
+    --bg: linear-gradient(135deg,#f093fb,#f5576c);
+    --card: rgba(255,255,255,0.9);
+    --text: #333;
+}
+
+body {
+    margin:0;
+    font-family:'Segoe UI';
+    background:var(--bg);
+    color:var(--text);
+    height:100vh;
+}
+
+/* CENTER LOGIN */
+.center-screen {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+/* APP CONTAINER */
+.container {
+    max-width:1000px;
+    margin:auto;
+    padding:20px;
+}
+
+/* CARD */
+.card {
+    backdrop-filter:blur(15px);
+    background:var(--card);
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* INPUTS */
+input, textarea, select {
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+}
+
+/* BUTTON */
+button {
+    margin-top:10px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#00c9ff;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover {opacity:0.8;}
+
+/* TOP BAR */
+.topbar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* FEEDBACK */
+.feedback {
+    padding:10px;
+    border-radius:10px;
+    margin-top:10px;
+    background:rgba(0,0,0,0.2);
+}
+
+/* HIDE */
+.hidden {display:none;}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN CENTERED -->
+<div id="loginPage" class="center-screen">
+    <div class="card" style="width:300px;">
+        <h2 style="text-align:center;">🔐 Login</h2>
+        <input id="user" placeholder="Username">
+        <input id="pass" type="password" placeholder="Password">
+        <button onclick="signup()">Signup</button>
+        <button onclick="login()">Login</button>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+<div class="container">
+
+<div class="topbar">
+    <h2>🌈 Feedback Dashboard</h2>
+    <div>
+        <button onclick="toggleTheme()">🌙/☀️</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="card">
+    <h3>📊 Dashboard</h3>
+    <p>Total Feedback: <span id="total"></span></p>
+    <p>Average Rating: <span id="avg"></span></p>
+</div>
+
+<!-- FORM -->
+<div class="card">
+    <h3>📝 Feedback Form</h3>
+    <input id="name" placeholder="Name">
+    <select id="category">
+        <option>Website</option>
+        <option>Service</option>
+        <option>Product</option>
+    </select>
+    <textarea id="msg" placeholder="Feedback"></textarea>
+    <select id="rating">
+        <option value="5">⭐⭐⭐⭐⭐</option>
+        <option value="4">⭐⭐⭐⭐</option>
+        <option value="3">⭐⭐⭐</option>
+        <option value="2">⭐⭐</option>
+        <option value="1">⭐</option>
+    </select>
+    <button onclick="saveFeedback()">Submit</button>
+</div>
+
+<!-- SEARCH -->
+<div class="card">
+    <input id="search" placeholder="Search..." onkeyup="load()">
+</div>
+
+<!-- LIST -->
+<div id="list"></div>
+
+</div>
+</div>
+
+<script>
+let editIndex = -1;
+
+/* AUTH */
+function signup(){
+    localStorage.setItem("user", JSON.stringify({
+        u:user.value,
+        p:pass.value
+    }));
+    alert("Signup success!");
+}
+
+function login(){
+    let d = JSON.parse(localStorage.getItem("user"));
+    if(d && d.u===user.value && d.p===pass.value){
+        localStorage.setItem("login", true);
+        showApp();
+    } else alert("Invalid login");
+}
+
+function logout(){
+    localStorage.removeItem("login");
+    location.reload();
+}
+
+function showApp(){
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+}
+
+/* THEME */
+function toggleTheme(){
+    document.body.classList.toggle("light");
+}
+
+/* FEEDBACK */
+function saveFeedback(){
+    let data = JSON.parse(localStorage.getItem("fb")) || [];
+    data.push({
+        name:name.value,
+        category:category.value,
+        msg:msg.value,
+        rating:rating.value
+    });
+    localStorage.setItem("fb", JSON.stringify(data));
+    load();
+}
+
+/* LOAD */
+function load(){
+    let data = JSON.parse(localStorage.getItem("fb")) || [];
+    let s = document.getElementById("search").value.toLowerCase();
+
+    list.innerHTML="";
+    let total = 0;
+
+    data.forEach((f,i)=>{
+        if(f.name.toLowerCase().includes(s) || f.msg.toLowerCase().includes(s)){
+            total += parseInt(f.rating);
+
+            list.innerHTML += `
+            <div class="card feedback">
+                <b>${f.name}</b> (${f.category})<br>
+                ${f.msg}<br>
+                ⭐${f.rating}
+                <button onclick="del(${i})">Delete</button>
+            </div>`;
+        }
+    });
+
+    document.getElementById("total").innerText = data.length;
+    document.getElementById("avg").innerText = data.length ? (total/data.length).toFixed(1) : 0;
+}
+
+/* DELETE */
+function del(i){
+    let data = JSON.parse(localStorage.getItem("fb"));
+    data.splice(i,1);
+    localStorage.setItem("fb", JSON.stringify(data));
+    load();
+}
+
+/* INIT */
+if(localStorage.getItem("login")) showApp();
+load();
+</script>
+
+</body>
+</html>
